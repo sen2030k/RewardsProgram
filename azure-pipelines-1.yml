@@ -37,50 +37,62 @@ stages:
 - stage: Dev
   dependsOn: Build
   jobs:
-  - deployment: Dev_Deployment  # Use 'deployment' instead of 'job'
-    environment: 'Dev'  # Linking this job to the 'Dev' environment
+  - deployment: Dev_Deployment
+    environment: 'Dev'  # Match this with the Azure DevOps Environment name
     variables:
       environment: 'Dev'
-    steps:
-    - task: AzureWebApp@1
-      inputs:
-        azureSubscription: 'Your Azure Subscription'
-        appName: 'your-dev-app'
-        package: '$(Build.ArtifactStagingDirectory)/publish'
-        deployToSlotOrASE: true
-        resourceGroupName: 'your-resource-group'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: AzureWebApp@1
+            displayName: 'Deploy to Dev'
+            inputs:
+              azureSubscription: 'Your Azure Subscription'   # Set the correct Azure Subscription
+              appName: 'your-dev-app'                         # Set the correct App Service name
+              package: '$(Build.ArtifactStagingDirectory)/publish'  # Path to published files
+              deployToSlotOrASE: true
+              resourceGroupName: 'your-resource-group'            # Ensure this is correct
+              appType: 'webApp'  # Set this to 'webApp' for Windows-based web app
 
 - stage: Testing
   dependsOn: Build
   jobs:
-  - deployment: Testing_Deployment  # Use 'deployment' instead of 'job'
-    environment: 'Testing'  # Linking this job to the 'Testing' environment
+  - deployment: Testing_Deployment
+    environment: 'Testing'  # Match this with the Azure DevOps Environment name
     variables:
       environment: 'Testing'
-    steps:
-    - task: AzureWebApp@1
-      inputs:
-        azureSubscription: 'Your Azure Subscription'
-        appName: 'your-testing-app'
-        package: '$(Build.ArtifactStagingDirectory)/publish'
-        deployToSlotOrASE: true
-        resourceGroupName: 'your-resource-group'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: AzureWebApp@1
+            displayName: 'Deploy to Testing'
+            inputs:
+              azureSubscription: 'Your Azure Subscription'
+              appName: 'your-testing-app'                        # Set the correct App Service name
+              package: '$(Build.ArtifactStagingDirectory)/publish'
+              deployToSlotOrASE: true
+              resourceGroupName: 'your-resource-group'
+              appType: 'webApp'  # Set this to 'webApp' for Windows-based web app
 
 - stage: Production
   dependsOn: Build
   jobs:
-  - deployment: Production_Deployment  # Use 'deployment' instead of 'job'
-    environment: 'Production'  # Linking this job to the 'Production' environment
-    approval:
-      approvers:
-        - user: 'approver@example.com'  # Approval gate for production deployment
+  - deployment: Production_Deployment
+    environment: 'Production'  # Match this with the Azure DevOps Environment name
     variables:
       environment: 'Production'
-    steps:
-    - task: AzureWebApp@1
-      inputs:
-        azureSubscription: 'Your Azure Subscription'
-        appName: 'your-production-app'
-        package: '$(Build.ArtifactStagingDirectory)/publish'
-        deployToSlotOrASE: true
-        resourceGroupName: 'your-resource-group'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: AzureWebApp@1
+            displayName: 'Deploy to Production'
+            inputs:
+              azureSubscription: 'Your Azure Subscription'
+              appName: 'your-production-app'                     # Set the correct App Service name
+              package: '$(Build.ArtifactStagingDirectory)/publish'
+              deployToSlotOrASE: true
+              resourceGroupName: 'your-resource-group'
+              appType: 'webApp'  # Set this to 'webApp' for Windows-based web app
