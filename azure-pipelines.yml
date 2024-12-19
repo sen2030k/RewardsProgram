@@ -1,0 +1,86 @@
+trigger:
+- master
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  solution: '**/*.sln'
+  buildPlatform: 'Any CPU'
+  buildConfiguration: 'Release'
+
+stages:
+- stage: Build
+  jobs:
+  - job: Build_Job
+    steps:
+    - task: NuGetToolInstaller@1
+    - task: NuGetCommand@2
+      inputs:
+        restoreSolution: '$(solution)'
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'build'
+        projects: '$(solution)'
+        arguments: '--configuration $(buildConfiguration)'
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'publish'
+        projects: '$(solution)'
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/publish'
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'test'
+        projects: '$(solution)'
+        arguments: '--configuration $(buildConfiguration)'
+
+- stage: Dev
+  dependsOn: Build
+  jobs:
+  - job: Dev_Deployment
+    environment: 'Dev'  # Linking this job to the 'Dev' environment
+    variables:
+      environment: 'Dev'
+    steps:
+    - task: AzureWebApp@1
+      inputs:
+        azureSubscription: 'Your Azure Subscription'
+        appName: 'your-dev-app'
+        package: '$(Build.ArtifactStagingDirectory)/publish'
+        deployToSlotOrASE: true
+        resourceGroupName: 'your-resource-group'
+
+- stage: Testing
+  dependsOn: Build
+  jobs:
+  - job: Testing_Deployment
+    environment: 'Testing'  # Linking this job to the 'Testing' environment
+    variables:
+      environment: 'Testing'
+    steps:
+    - task: AzureWebApp@1
+      inputs:
+        azureSubscription: 'Your Azure Subscription'
+        appName: 'your-testing-app'
+        package: '$(Build.ArtifactStagingDirectory)/publish'
+        deployToSlotOrASE: true
+        resourceGroupName: 'your-resource-group'
+
+- stage: Production
+  dependsOn: Build
+  jobs:
+  - job: Production_Deployment
+    environment: 'Production'  # Linking this job to the 'Production' environment
+    variables:
+      environment: 'Production'
+    approval:  # Approval gate for production deployment
+      approvers:
+        - user: 'approver@example.com'
+    steps:
+    - task: AzureWebApp@1
+      inputs:
+        azureSubscription: 'Your Azure Subscription'
+        appName: 'your-production-app'
+        package: '$(Build.ArtifactStagingDirectory)/publish'
+        deployToSlotOrASE: true
+        resourceGroupName: 'your-resource-group'
